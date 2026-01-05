@@ -4,5 +4,5 @@ set "DEFAULT_PY=%~dp0.venv\Scripts\python.exe"
 if not exist "%DEFAULT_PY%" (
     set "DEFAULT_PY=python"
 )
-"%DEFAULT_PY%" "%~dp0fit_extractor.py"
+"%DEFAULT_PY%" "%~dp0cpet_to_csv.py"
 pause

@@ -6,7 +6,25 @@ import os
 HEADER_ROW = 116
 UNIT_ROW = 117
 DATA_START = 118
+TIME_COLUMN_NAME = "Tempo"  # nome della colonna tempo, adatta se cambia
 
+def clean_time(value):
+    """
+    Rimuove millisecondi e arrotonda i secondi, mantenendo h:mm:ss
+    """
+    if pd.isna(value):
+        return value
+    value = str(value)
+    if ',' in value:
+        hms, ms = value.split(',')
+        h, m, s = hms.split(':')
+        s = round(float(s))  # arrotonda i secondi
+        if s >= 60:
+            s -= 60
+            m = str(int(m)+1)
+        return f"{h}:{str(int(m)).zfill(2)}:{str(s).zfill(2)}"
+    else:
+        return value
 
 def convert_excel_to_csv():
     # Selezione Excel
@@ -29,6 +47,14 @@ def convert_excel_to_csv():
     if not csv_path:
         return
 
+    # Controllo permessi e file aperto
+    if os.path.exists(csv_path):
+        try:
+            os.remove(csv_path)
+        except PermissionError:
+            messagebox.showerror("Errore", f"Impossibile sovrascrivere il file:\n{csv_path}\nChiudi il file se aperto.")
+            return
+
     try:
         df = pd.read_excel(excel_path, header=None)
 
@@ -43,6 +69,12 @@ def convert_excel_to_csv():
         data = df.iloc[DATA_START:].copy()
         data.columns = merged_headers
         data = data.dropna(how="all")
+
+        # Pulizia colonna tempo, se presente
+        # Cerca colonna che contiene "Tempo" nel nome
+        time_cols = [col for col in data.columns if "Tempo" in col]
+        for col in time_cols:
+            data[col] = data[col].apply(clean_time)
 
         data.to_csv(csv_path, index=False)
 
@@ -63,7 +95,7 @@ root.resizable(False, False)
 
 label = tk.Label(
     root,
-    text="Conversione CPET Excel → CSV\n(unisce header + unità)",
+    text="Conversione CPET Excel → CSV\n(unisce header + unità, pulisce tempo)",
     font=("Arial", 11),
     pady=20
 )
