@@ -61,22 +61,34 @@ def convert_excel_to_csv():
         headers = df.iloc[HEADER_ROW].astype(str)
         units = df.iloc[UNIT_ROW].astype(str)
 
+        # Unisce header + unità
         merged_headers = [
             f"{h} ({u})" if u != "nan" else h
             for h, u in zip(headers, units)
         ]
 
+        # Rimuove ',ms' solo nella primissima cella della legenda
+        if merged_headers and "hh:mm:ss,ms" in merged_headers[0]:
+            merged_headers[0] = merged_headers[0].replace(",ms", "")
+
+        # Seleziona dati
         data = df.iloc[DATA_START:].copy()
         data.columns = merged_headers
         data = data.dropna(how="all")
 
         # Pulizia colonna tempo, se presente
-        # Cerca colonna che contiene "Tempo" nel nome
         time_cols = [col for col in data.columns if "Tempo" in col]
         for col in time_cols:
             data[col] = data[col].apply(clean_time)
 
-        data.to_csv(csv_path, index=False)
+        # Conversione decimali: sostituisci ',' con '.' e prova a convertire in float
+        for col in data.columns:
+            if col not in time_cols:
+                data[col] = data[col].astype(str).str.replace(',', '.')
+                data[col] = pd.to_numeric(data[col], errors='ignore')
+
+        # Salvataggio CSV
+        data.to_csv(csv_path, index=False, float_format="%.3f")
 
         messagebox.showinfo(
             "Operazione completata",
@@ -95,7 +107,7 @@ root.resizable(False, False)
 
 label = tk.Label(
     root,
-    text="Conversione CPET Excel → CSV\n(unisce header + unità, pulisce tempo)",
+    text="Conversione CPET Excel → CSV\n(unisce header + unità, pulisce tempo e decimali)",
     font=("Arial", 11),
     pady=20
 )
