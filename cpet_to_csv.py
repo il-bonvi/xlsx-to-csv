@@ -68,7 +68,7 @@ def convert_excel_to_csv():
         ]
 
         # Rimuove ',ms' solo nella primissima cella della legenda
-        if merged_headers and "hh:mm:ss,ms" in merged_headers[0]:
+        if merged_headers:
             merged_headers[0] = merged_headers[0].replace(",ms", "")
 
         # Seleziona dati
